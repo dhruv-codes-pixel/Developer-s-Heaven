@@ -1,0 +1,3002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SiteStock — Material Order Tracking</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     DESIGN TOKENS — SiteStock
+     Subject: job-site material tracking. Cards read like stenciled
+     crate tags; backgrounds carry a faint blueprint grid.
+     ============================================================ */
+  :root {
+    --navy:         #16243B;   /* deep surfaces / header */
+    --navy-soft:    #1E3354;   /* card surface on dark areas */
+    --steel:        #2F5D8C;   /* secondary accent */
+    --amber:        #F2A93B;   /* primary action / hi-vis */
+    --amber-dark:   #D8901F;
+    --concrete:     #EDEAE3;   /* page background */
+    --concrete-line:#DAD5C9;   /* grid lines on concrete */
+    --ink:          #171A1F;   /* primary text */
+    --ink-soft:     #51596B;   /* secondary text */
+    --paper:        #FBFAF7;   /* card surface on light areas */
+    --green:        #4C9A6B;
+    --green-dark:   #3A7A54;
+    --red:          #C0473A;
+    --red-dark:     #A23A2F;
+
+    --font-display: 'Oswald', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'IBM Plex Mono', monospace;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --shadow-card: 0 2px 0 rgba(23,26,31,0.06), 0 8px 20px -10px rgba(23,26,31,0.25);
+    --shadow-pop:  0 20px 50px -15px rgba(23,26,31,0.45);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background-color: var(--concrete);
+    background-image:
+      linear-gradient(var(--concrete-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--concrete-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    min-height: 100vh;
+  }
+  #root { min-height: 100vh; }
+  button { font-family: inherit; cursor: pointer; }
+  input, select { font-family: inherit; }
+  a { color: inherit; }
+
+  ::selection { background: var(--amber); color: var(--ink); }
+
+  :focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  /* ---------- Shared typography ---------- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 18px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--amber);
+    color: var(--ink);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 6px 14px -6px rgba(242,169,59,0.55);
+  }
+  .btn-primary:hover { background: var(--amber-dark); }
+  .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid rgba(23,26,31,0.15);
+  }
+  .btn-ghost:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-danger:hover { background: var(--red-dark); }
+
+  .btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .btn-icon:hover { background: rgba(23,26,31,0.06); color: var(--ink); }
+
+  /* ---------- Form fields ---------- */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+  .field label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .field input,
+  .field select {
+    border: 1.5px solid rgba(23,26,31,0.18);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    font-size: 15px;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color 0.12s ease;
+  }
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--steel);
+  }
+  .field-error {
+    color: var(--red);
+    font-size: 12.5px;
+    font-family: var(--font-mono);
+  }
+
+  /* ---------- Banners ---------- */
+  .banner {
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-family: var(--font-mono);
+    border-left: 3px solid;
+    line-height: 1.45;
+  }
+  .banner-error {
+    background: #FBEAE7;
+    border-color: var(--red);
+    color: var(--red-dark);
+  }
+  .banner-info {
+    background: #EAF1F8;
+    border-color: var(--steel);
+    color: var(--navy);
+  }
+
+  /* ---------- Spinner ---------- */
+  .spinner {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(23,26,31,0.2);
+    border-top-color: var(--ink);
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .spinner-light {
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .full-loading {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  /* ============================================================
+     AUTH SCREEN
+     ============================================================ */
+  .auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pop);
+    padding: 36px 32px 32px;
+    position: relative;
+    border: 1px solid rgba(23,26,31,0.08);
+  }
+  /* amber corner stamp */
+  .auth-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 46px; height: 46px;
+    background: linear-gradient(135deg, var(--amber) 0 50%, transparent 50%);
+    border-radius: var(--radius-md) 0 0 0;
+    opacity: 0.9;
+  }
+  .auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .auth-brand-mark {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--amber);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .auth-brand-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: 0.01em;
+    color: var(--navy);
+  }
+  .auth-title {
+    font-family: var(--font-display);
+    font-size: 27px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .auth-sub {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin: 0 0 24px;
+    line-height: 1.45;
+  }
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .auth-submit { width: 100%; padding: 13px; font-size: 15px; margin-top: 4px; }
+  .auth-toggle {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+  .auth-toggle button {
+    background: none; border: none; padding: 0;
+    color: var(--steel);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .auth-toggle button:hover { color: var(--navy); }
+
+  /* ============================================================
+     APP HEADER (projects screen)
+     ============================================================ */
+  .app-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--amber);
+  }
+  .app-header .auth-brand-name { color: #fff; }
+  .app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .app-header-email {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.6);
+  }
+  .signout-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .signout-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+
+  /* ============================================================
+     PROJECTS SCREEN
+     ============================================================ */
+  .projects-main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+  }
+  .projects-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .projects-heading h1 {
+    font-family: var(--font-display);
+    font-size: 29px;
+    margin: 4px 0 0;
+    color: var(--ink);
+  }
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .project-card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-left: 4px solid transparent;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 20px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  }
+  .project-card:hover {
+    border-left-color: var(--amber);
+    box-shadow: 0 4px 0 rgba(23,26,31,0.06), 0 14px 30px -12px rgba(23,26,31,0.3);
+    transform: translateY(-2px);
+  }
+  .project-card-stamp {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 26px; height: 26px;
+    border: 1.5px dashed rgba(23,26,31,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+  }
+  .project-card-name {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0 0 6px;
+    padding-right: 30px;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+  .project-card-meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+  .project-card-actions {
+    margin-top: auto;
+    padding-top: 14px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .project-card:hover .project-card-actions,
+  .project-card:focus-within .project-card-actions { opacity: 1; }
+  .project-card-actions button { font-size: 12.5px; padding: 6px 10px; }
+
+  .project-rename-input {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    border: 1.5px solid var(--steel);
+    border-radius: 5px;
+    padding: 4px 8px;
+    margin: 0 0 6px;
+    width: 100%;
+  }
+
+  /* "new project" tile */
+  .project-card-new {
+    background: transparent;
+    border: 2px dashed rgba(23,26,31,0.22);
+    box-shadow: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    font-family: var(--font-display);
+    font-size: 16px;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .project-card-new:hover {
+    border-color: var(--steel);
+    color: var(--steel);
+    background: rgba(47,93,140,0.04);
+    transform: none;
+  }
+  .project-card-new .plus {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-state h3 {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-size: 21px;
+    margin-bottom: 6px;
+  }
+  .empty-state p { font-size: 14.5px; line-height: 1.5; }
+
+  /* ============================================================
+     MODAL
+     ============================================================ */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(22,36,59,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-card {
+    background: var(--paper);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pop);
+    width: 100%;
+    max-width: 430px;
+    padding: 28px 26px 24px;
+    animation: popIn 0.18s ease;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+  .modal-body-text {
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    line-height: 1.55;
+  }
+  .modal-body-text strong { color: var(--ink); }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .modal-icon-warn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #FBEAE7;
+    color: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  /* ============================================================
+     DASHBOARD HEADER
+     ============================================================ */
+  .dashboard-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--amber);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .dashboard-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+  .back-link {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .back-link:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+  .dashboard-project-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dashboard-project-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ============================================================
+     TAB BAR
+     ============================================================ */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    background: var(--navy-soft);
+    padding: 0 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.55);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 14px 16px 11px;
+    border-bottom: 3px solid transparent;
+    transition: color 0.12s ease, border-color 0.12s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.85); }
+  .tab-btn.tab-active {
+    color: #fff;
+    border-bottom-color: var(--amber);
+  }
+
+  /* ============================================================
+     DASHBOARD MAIN AREA
+     ============================================================ */
+  .dashboard-main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 32px 80px;
+  }
+
+  /* ============================================================
+     LOG ENTRY FORM
+     ============================================================ */
+  .log-card {
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 22px 22px 20px;
+    margin-bottom: 28px;
+  }
+  .log-card-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .log-form-grid {
+    display: grid;
+    grid-template-columns: 132px minmax(160px, 1.6fr) 100px 120px 130px auto;
+    gap: 14px;
+    align-items: end;
+  }
+  .log-form-grid .field input,
+  .log-form-grid .field select {
+    padding: 10px 11px;
+    font-size: 14.5px;
+  }
+  .log-form-submit { height: 42px; white-space: nowrap; }
+
+  /* ============================================================
+     LEDGER TABLE
+     ============================================================ */
+  .ledger-card {
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .ledger-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 0;
+  }
+  .ledger-card-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+  }
+  .ledger-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .ledger-scroll {
+    overflow-x: auto;
+    padding: 14px 22px 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+  }
+  .ledger-table thead th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1.5px solid rgba(23,26,31,0.12);
+    white-space: nowrap;
+  }
+  .ledger-table thead th.num { text-align: right; }
+  .ledger-table tbody td {
+    padding: 16px 12px;
+    border-bottom: 1px solid rgba(23,26,31,0.07);
+    font-size: 14.5px;
+    color: var(--ink);
+    vertical-align: middle;
+  }
+  .ledger-table tbody tr:last-child td { border-bottom: none; }
+  .ledger-table tbody tr:hover { background: rgba(47,93,140,0.035); }
+  .ledger-table tbody tr.editing-row { background: rgba(242,169,59,0.08); }
+  .ledger-table td.num,
+  .ledger-table td.cell-date,
+  .ledger-table td.cell-qty,
+  .ledger-table td.cell-price,
+  .ledger-table td.cell-total {
+    font-family: var(--font-mono);
+  }
+  .ledger-table td.num { text-align: right; }
+  .ledger-table td.cell-total { font-weight: 600; }
+  .ledger-table td.cell-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .ledger-table td.cell-actions .row-actions {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .ledger-edit-input {
+    width: 100%;
+    border: 1.5px solid var(--steel);
+    border-radius: 5px;
+    padding: 7px 8px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    background: #fff;
+    color: var(--ink);
+  }
+  .ledger-edit-input.is-text { font-family: var(--font-body); }
+  .ledger-table tfoot td {
+    padding: 14px 12px;
+    border-top: 2px solid rgba(23,26,31,0.15);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .ledger-table tfoot td.num { text-align: right; }
+  .ledger-empty {
+    padding: 52px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .ledger-empty h3 {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-size: 19px;
+    margin-bottom: 6px;
+  }
+  .ledger-empty p { font-size: 14px; line-height: 1.5; }
+
+  /* ============================================================
+     MOBILE — general components
+     (560px breakpoint, properly closed)
+     ============================================================ */
+  @media (max-width: 560px) {
+    .app-header { padding: 14px 18px; }
+    .app-header-email { display: none; }
+    .auth-card { padding: 28px 20px 24px; }
+    .auth-title { font-size: 24px; }
+    .projects-main { padding: 26px 18px 60px; }
+    .projects-heading h1 { font-size: 24px; }
+    .dashboard-header { padding: 13px 18px; }
+    .tab-bar { padding: 0 18px; }
+    .dashboard-main { padding: 22px 18px 60px; }
+    .log-card { padding: 18px 16px; }
+    .log-form-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .log-form-submit { grid-column: 1 / -1; }
+    .ledger-card-head { padding: 16px 16px 0; }
+    .ledger-scroll { padding: 12px 16px 6px; }
+  }
+
+  /* ============================================================
+     TOTAL SUMMARY TAB
+     ============================================================ */
+  .total-spent-card {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-soft) 100%);
+    border-radius: var(--radius-md);
+    padding: 32px 30px 28px;
+    margin-bottom: 28px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  .total-spent-card::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle at top right, rgba(242,169,59,0.28), transparent 70%);
+    pointer-events: none;
+  }
+  .total-spent-figure {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(44px, 7vw, 68px);
+    line-height: 1.05;
+    margin: 6px 0 8px;
+    color: var(--amber);
+    letter-spacing: -0.01em;
+    position: relative;
+  }
+  .total-spent-sub {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* ============================================================
+     VISUAL ANALYTICS TAB
+     ============================================================ */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .chart-card {
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 20px 20px 18px;
+  }
+  .chart-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .chart-card-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+  }
+  .chart-select {
+    border: 1.5px solid rgba(23,26,31,0.18);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 13.5px;
+    font-family: var(--font-body);
+    background: #fff;
+    color: var(--ink);
+    max-width: 200px;
+    transition: border-color 0.12s ease;
+  }
+  .chart-select:focus { border-color: var(--steel); }
+  .chart-svg-wrap {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chart-empty {
+    padding: 40px 12px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  /* SVG classes */
+  .chart-grid-line { stroke: rgba(23,26,31,0.09); stroke-width: 1; }
+  .chart-axis-line { stroke: rgba(23,26,31,0.22); stroke-width: 1.2; }
+  .chart-tick-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    fill: var(--ink-soft);
+  }
+  .chart-axis-title {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--ink-soft);
+  }
+  .chart-data-line {
+    fill: none;
+    stroke: var(--steel);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .chart-point {
+    fill: var(--amber);
+    stroke: var(--navy);
+    stroke-width: 1.5;
+  }
+  /* Donut chart */
+  .donut-layout {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .donut-slice-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    fill: #fff;
+    paint-order: stroke;
+    stroke: rgba(23,26,31,0.35);
+    stroke-width: 2px;
+  }
+  .donut-center-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    fill: var(--ink-soft);
+  }
+  .donut-center-figure {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    fill: var(--ink);
+  }
+  .chart-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 150px;
+  }
+  .chart-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .chart-legend-swatch {
+    width: 11px; height: 11px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .chart-legend-name {
+    color: var(--ink);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chart-legend-pct {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 860px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .total-spent-card { padding: 24px 20px 20px; }
+    .chart-card { padding: 16px 16px 14px; }
+  }
+
+  /* ============================================================
+     PRICE TREND ALERTS TAB
+     ============================================================ */
+
+  /* Summary bar */
+  .alerts-summary-bar {
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 22px 26px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .alerts-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 28px;
+    flex-shrink: 0;
+  }
+  .alerts-stat-value {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .alerts-stat-value.spike   { color: var(--red); }
+  .alerts-stat-value.savings { color: var(--green); }
+  .alerts-stat-value.neutral { color: var(--navy); }
+  .alerts-stat-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .alerts-stat-divider {
+    width: 1px;
+    height: 44px;
+    background: rgba(23,26,31,0.12);
+    margin-right: 28px;
+    align-self: center;
+    flex-shrink: 0;
+  }
+  .alerts-summary-note {
+    flex: 1;
+    min-width: 200px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    padding-left: 28px;
+    border-left: 1px solid rgba(23,26,31,0.12);
+  }
+
+  /* All-clear state */
+  .alerts-all-clear {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, rgba(76,154,107,0.07) 0%, var(--paper) 100%);
+    border: 1px solid rgba(76,154,107,0.28);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius-md);
+    padding: 20px 22px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-card);
+  }
+  .alerts-all-clear-icon {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(76,154,107,0.15);
+    color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .alerts-all-clear-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--green);
+    margin-bottom: 3px;
+  }
+  .alerts-all-clear-sub {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  /* Sections */
+  .alerts-section { margin-bottom: 32px; }
+  .alerts-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .alerts-section-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .alerts-section-icon.spike   { background: rgba(192,71,58,0.12); color: var(--red); }
+  .alerts-section-icon.savings { background: rgba(76,154,107,0.12); color: var(--green); }
+  .alerts-section-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+  }
+  .alerts-section-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+  }
+  .alerts-section-badge.spike   { background: rgba(192,71,58,0.12); color: var(--red); }
+  .alerts-section-badge.savings { background: rgba(76,154,107,0.12); color: var(--green); }
+
+  /* Alert card grid */
+  .alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px;
+  }
+
+  /* Individual alert card */
+  .alert-card {
+    background: var(--paper);
+    border: 1px solid rgba(23,26,31,0.10);
+    border-left: 4px solid;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 18px 18px 15px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .alert-card:hover {
+    box-shadow: 0 4px 0 rgba(23,26,31,0.06), 0 14px 30px -12px rgba(23,26,31,0.28);
+    transform: translateY(-2px);
+  }
+  .alert-card.spike {
+    border-left-color: var(--red);
+    background: linear-gradient(160deg, rgba(192,71,58,0.04) 0%, var(--paper) 52%);
+  }
+  .alert-card.savings {
+    border-left-color: var(--green);
+    background: linear-gradient(160deg, rgba(76,154,107,0.05) 0%, var(--paper) 52%);
+  }
+
+  .alert-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .alert-card-type-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .alert-card-type-label.spike   { color: var(--red); }
+  .alert-card-type-label.savings { color: var(--green); }
+
+  .alert-card-material {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .alert-card-badge {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .alert-card-badge.spike   { background: rgba(192,71,58,0.12); color: var(--red); }
+  .alert-card-badge.savings { background: rgba(76,154,107,0.12); color: var(--green); }
+
+  /* Price comparison block */
+  .alert-card-prices {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(23,26,31,0.04);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .alert-price-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .alert-price-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .alert-price-value {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .alert-price-value.spike   { color: var(--red); }
+  .alert-price-value.savings { color: var(--green); }
+  .alert-price-value.neutral { color: var(--ink); }
+  .alert-price-arrow {
+    font-size: 18px;
+    color: var(--ink-soft);
+    padding: 0 2px;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  .alert-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .alert-card-date,
+  .alert-card-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  /* Empty states */
+  .alerts-empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-soft);
+  }
+  .alerts-empty-icon {
+    font-size: 38px;
+    margin-bottom: 14px;
+    line-height: 1;
+  }
+  .alerts-empty h3 {
+    font-family: var(--font-display);
+    font-size: 21px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .alerts-empty p {
+    font-size: 14.5px;
+    max-width: 380px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 680px) {
+    .alerts-summary-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .alerts-stat-divider {
+      width: 100%;
+      height: 1px;
+      margin: 0;
+    }
+    .alerts-summary-note {
+      padding-left: 0;
+      border-left: none;
+      border-top: 1px solid rgba(23,26,31,0.10);
+      padding-top: 16px;
+    }
+    .alerts-grid { grid-template-columns: 1fr; }
+    .alerts-all-clear { flex-direction: column; text-align: center; }
+  }
+  @media (max-width: 560px) {
+    .alerts-summary-bar { padding: 18px 18px; }
+    .alert-card { padding: 16px 16px 13px; }
+  }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+const {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo
+} = React;
+
+/* ============================================================
+   SUPABASE SETUP — replace these two placeholders
+   ============================================================ */
+const SUPABASE_URL = "https://taiwpnkiortweqzitkdw.supabase.co"; // e.g. https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = "sb_publishable_LGMc2uhzwsmVEu7ewmNvYw_q-lCAfLp";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============================================================
+   Small shared UI helpers
+   ============================================================ */
+function Spinner({
+  light
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: "spinner" + (light ? " spinner-light" : ""),
+    "aria-hidden": "true"
+  });
+}
+function Modal({
+  children,
+  onClose
+}) {
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onMouseDown: e => {
+      if (e.target === e.currentTarget) onClose();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-card",
+    role: "dialog",
+    "aria-modal": "true"
+  }, children));
+}
+function formatDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  } catch (e) {
+    return "";
+  }
+}
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+function AuthScreen({
+  onAuthed
+}) {
+  const [mode, setMode] = useState("login"); // 'login' | 'signup'
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    if (!email.trim() || !password) {
+      setError("Enter both an email and a password.");
+      return;
+    }
+    if (mode === "signup" && password.length < 6) {
+      setError("Password needs to be at least 6 characters.");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const {
+          data,
+          error: authErr
+        } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        });
+        if (authErr) throw authErr;
+        onAuthed(data.session);
+      } else {
+        const {
+          data,
+          error: authErr
+        } = await supabase.auth.signUp({
+          email: email.trim(),
+          password
+        });
+        if (authErr) throw authErr;
+        if (data.session) {
+          onAuthed(data.session);
+        } else {
+          setInfo("Account created. Check your inbox to confirm your email, then log in.");
+          setMode("login");
+        }
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "auth-screen"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand-mark"
+  }, "S"), /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand-name"
+  }, "SiteStock")), /*#__PURE__*/React.createElement("h1", {
+    className: "auth-title"
+  }, mode === "login" ? "Welcome back" : "Create an account"), /*#__PURE__*/React.createElement("p", {
+    className: "auth-sub"
+  }, mode === "login" ? "Log in to pick up your projects." : "Set up an account to start tracking material orders."), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginBottom: 16
+    }
+  }, error), info && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-info",
+    style: {
+      marginBottom: 16
+    }
+  }, info), /*#__PURE__*/React.createElement("form", {
+    className: "auth-form",
+    onSubmit: handleSubmit
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "email"
+  }, "Email"), /*#__PURE__*/React.createElement("input", {
+    id: "email",
+    type: "email",
+    autoComplete: "email",
+    value: email,
+    onChange: e => setEmail(e.target.value),
+    placeholder: "you@company.com"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "password"
+  }, "Password"), /*#__PURE__*/React.createElement("input", {
+    id: "password",
+    type: "password",
+    autoComplete: mode === "login" ? "current-password" : "new-password",
+    value: password,
+    onChange: e => setPassword(e.target.value),
+    placeholder: "••••••••"
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    className: "btn btn-primary auth-submit",
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(Spinner, null) : null, mode === "login" ? "Log in" : "Sign up")), /*#__PURE__*/React.createElement("div", {
+    className: "auth-toggle"
+  }, mode === "login" ? /*#__PURE__*/React.createElement("span", null, "New here?", " ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setMode("signup");
+      setError("");
+      setInfo("");
+    }
+  }, "Create an account")) : /*#__PURE__*/React.createElement("span", null, "Already have an account?", " ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setMode("login");
+      setError("");
+      setInfo("");
+    }
+  }, "Log in")))));
+}
+
+/* ============================================================
+   PROJECT CARD — inline rename + delete
+   ============================================================ */
+function ProjectCard({
+  project,
+  onOpen,
+  onRename,
+  onDeleteRequest
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(project.project_name);
+  const [saving, setSaving] = useState(false);
+  const inputRef = React.useRef(null);
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+  async function commitRename() {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === project.project_name) {
+      setName(project.project_name);
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onRename(project.id, trimmed);
+      setEditing(false);
+    } catch (err) {
+      setName(project.project_name);
+    } finally {
+      setSaving(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "project-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "project-card-stamp",
+    "aria-hidden": "true"
+  }, "PR"), editing ? /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    className: "project-rename-input",
+    value: name,
+    onChange: e => setName(e.target.value),
+    onBlur: commitRename,
+    onKeyDown: e => {
+      if (e.key === "Enter") commitRename();
+      if (e.key === "Escape") {
+        setName(project.project_name);
+        setEditing(false);
+      }
+    },
+    disabled: saving
+  }) : /*#__PURE__*/React.createElement("h3", {
+    className: "project-card-name",
+    onClick: () => onOpen(project),
+    style: {
+      cursor: "pointer"
+    },
+    title: "Open project"
+  }, project.project_name), /*#__PURE__*/React.createElement("div", {
+    className: "project-card-meta"
+  }, "Created ", formatDate(project.created_at)), /*#__PURE__*/React.createElement("div", {
+    className: "project-card-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => setEditing(true)
+  }, "Rename"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => onDeleteRequest(project),
+    style: {
+      color: "var(--red)"
+    }
+  }, "Delete")));
+}
+
+/* ============================================================
+   CREATE PROJECT MODAL
+   ============================================================ */
+function CreateProjectModal({
+  onClose,
+  onCreate
+}) {
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  async function handleCreate(e) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError("Give the project a name.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await onCreate(trimmed);
+      onClose();
+    } catch (err) {
+      setError(err.message || "Couldn't create the project. Try again.");
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "modal-title"
+  }, "New project"), /*#__PURE__*/React.createElement("p", {
+    className: "modal-body-text"
+  }, "Give this job site or project a name you'll recognize later."), /*#__PURE__*/React.createElement("form", {
+    onSubmit: handleCreate
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "new-project-name"
+  }, "Project name"), /*#__PURE__*/React.createElement("input", {
+    id: "new-project-name",
+    autoFocus: true,
+    value: name,
+    onChange: e => setName(e.target.value),
+    placeholder: "e.g. Riverside Apartments — Phase 2"
+  })), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginTop: 12
+    }
+  }, error), /*#__PURE__*/React.createElement("div", {
+    className: "modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn btn-ghost",
+    onClick: onClose
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    className: "btn btn-primary",
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(Spinner, null) : null, "Create project"))));
+}
+
+/* ============================================================
+   DELETE PROJECT CONFIRM MODAL
+   ============================================================ */
+function DeleteConfirmModal({
+  project,
+  onClose,
+  onConfirm
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  async function handleDelete() {
+    setLoading(true);
+    setError("");
+    try {
+      await onConfirm(project.id);
+      onClose();
+    } catch (err) {
+      setError(err.message || "Couldn't delete the project. Try again.");
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-icon-warn",
+    "aria-hidden": "true"
+  }, "!"), /*#__PURE__*/React.createElement("h2", {
+    className: "modal-title"
+  }, "Delete this project?"), /*#__PURE__*/React.createElement("p", {
+    className: "modal-body-text"
+  }, /*#__PURE__*/React.createElement("strong", null, project.project_name), " will be permanently deleted, including any data linked to it. This can't be undone."), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginBottom: 6
+    }
+  }, error), /*#__PURE__*/React.createElement("div", {
+    className: "modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn btn-ghost",
+    onClick: onClose
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn btn-danger",
+    onClick: handleDelete,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(Spinner, {
+    light: true
+  }) : null, "Delete project")));
+}
+
+/* ============================================================
+   PROJECTS SCREEN
+   ============================================================ */
+function ProjectsScreen({
+  session,
+  onSignOut,
+  onOpenProject
+}) {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const userId = session.user.id;
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const {
+      data,
+      error: fetchErr
+    } = await supabase.from("projects").select("id, user_id, project_name, created_at").eq("user_id", userId).order("created_at", {
+      ascending: false
+    });
+    if (fetchErr) {
+      setError(fetchErr.message);
+    } else {
+      setProjects(data || []);
+    }
+    setLoading(false);
+  }, [userId]);
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+  async function handleCreate(name) {
+    const {
+      data,
+      error: createErr
+    } = await supabase.from("projects").insert([{
+      project_name: name,
+      user_id: userId
+    }]).select().single();
+    if (createErr) throw createErr;
+    setProjects(prev => [data, ...prev]);
+  }
+  async function handleRename(id, newName) {
+    const {
+      error: renameErr
+    } = await supabase.from("projects").update({
+      project_name: newName
+    }).eq("id", id);
+    if (renameErr) throw renameErr;
+    setProjects(prev => prev.map(p => p.id === id ? {
+      ...p,
+      project_name: newName
+    } : p));
+  }
+  async function handleDelete(id) {
+    const {
+      error: deleteErr
+    } = await supabase.from("projects").delete().eq("id", id);
+    if (deleteErr) throw deleteErr;
+    setProjects(prev => prev.filter(p => p.id !== id));
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("header", {
+    className: "app-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand-mark"
+  }, "S"), /*#__PURE__*/React.createElement("div", {
+    className: "auth-brand-name"
+  }, "SiteStock")), /*#__PURE__*/React.createElement("div", {
+    className: "app-header-right"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "app-header-email"
+  }, session.user.email), /*#__PURE__*/React.createElement("button", {
+    className: "signout-btn",
+    onClick: onSignOut
+  }, "Log out"))), /*#__PURE__*/React.createElement("main", {
+    className: "projects-main"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "projects-toolbar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "projects-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, "Your projects"), /*#__PURE__*/React.createElement("h1", null, "Select a project")), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: () => setShowCreate(true)
+  }, "+ Create new project")), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginBottom: 20
+    }
+  }, error), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "full-loading",
+    style: {
+      minHeight: "30vh"
+    }
+  }, /*#__PURE__*/React.createElement(Spinner, null), " Loading projects…") : projects.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty-state"
+  }, /*#__PURE__*/React.createElement("h3", null, "No projects yet"), /*#__PURE__*/React.createElement("p", null, "Create your first project to start tracking material orders."), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    style: {
+      marginTop: 16
+    },
+    onClick: () => setShowCreate(true)
+  }, "+ Create new project")) : /*#__PURE__*/React.createElement("div", {
+    className: "project-grid"
+  }, projects.map(p => /*#__PURE__*/React.createElement(ProjectCard, {
+    key: p.id,
+    project: p,
+    onOpen: onOpenProject,
+    onRename: handleRename,
+    onDeleteRequest: setDeleteTarget
+  })), /*#__PURE__*/React.createElement("button", {
+    className: "project-card project-card-new",
+    onClick: () => setShowCreate(true)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "plus"
+  }, "+"), "New project"))), showCreate && /*#__PURE__*/React.createElement(CreateProjectModal, {
+    onClose: () => setShowCreate(false),
+    onCreate: handleCreate
+  }), deleteTarget && /*#__PURE__*/React.createElement(DeleteConfirmModal, {
+    project: deleteTarget,
+    onClose: () => setDeleteTarget(null),
+    onConfirm: handleDelete
+  }));
+}
+
+/* ============================================================
+   FORMAT HELPERS
+   ============================================================ */
+function formatNumber(n, decimals = 2) {
+  const num = Number(n);
+  if (Number.isNaN(num)) return "0.00";
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+function formatLogDate(isoDate) {
+  try {
+    const [y, m, d] = isoDate.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  } catch (e) {
+    return isoDate;
+  }
+}
+function todayISO() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 10);
+}
+const COMMON_UNITS = ["bag", "kg", "ton", "m³", "ft", "load", "pcs", "litre"];
+
+/* ============================================================
+   LOG ENTRY FORM
+   ============================================================ */
+function LogEntryForm({
+  onAdd
+}) {
+  const [date, setDate] = useState(todayISO());
+  const [materialName, setMaterialName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    if (!date || !materialName.trim() || !unit.trim()) {
+      setError("Fill in date, material name, and unit.");
+      return;
+    }
+    const qtyNum = parseFloat(quantity);
+    const priceNum = parseFloat(unitPrice);
+    if (Number.isNaN(qtyNum) || qtyNum <= 0) {
+      setError("Quantity needs to be a number greater than 0.");
+      return;
+    }
+    if (Number.isNaN(priceNum) || priceNum < 0) {
+      setError("Unit price needs to be a number of 0 or more.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await onAdd({
+        date,
+        material_name: materialName.trim(),
+        quantity: qtyNum,
+        unit: unit.trim(),
+        unit_price: priceNum,
+        total_cost: qtyNum * priceNum
+      });
+      setMaterialName("");
+      setQuantity("");
+      setUnit("");
+      setUnitPrice("");
+    } catch (err) {
+      setError(err.message || "Couldn't save that entry. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "log-card"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "log-card-title"
+  }, "Log a material delivery"), /*#__PURE__*/React.createElement("form", {
+    onSubmit: handleSubmit
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "log-form-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "log-date"
+  }, "Date"), /*#__PURE__*/React.createElement("input", {
+    id: "log-date",
+    type: "date",
+    value: date,
+    onChange: e => setDate(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "log-material"
+  }, "Material"), /*#__PURE__*/React.createElement("input", {
+    id: "log-material",
+    type: "text",
+    placeholder: "e.g. Cement OPC 53",
+    value: materialName,
+    onChange: e => setMaterialName(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "log-qty"
+  }, "Quantity"), /*#__PURE__*/React.createElement("input", {
+    id: "log-qty",
+    type: "number",
+    min: "0",
+    step: "0.01",
+    placeholder: "0",
+    value: quantity,
+    onChange: e => setQuantity(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "log-unit"
+  }, "Unit"), /*#__PURE__*/React.createElement("input", {
+    id: "log-unit",
+    type: "text",
+    list: "unit-suggestions",
+    placeholder: "bag, ton…",
+    value: unit,
+    onChange: e => setUnit(e.target.value)
+  }), /*#__PURE__*/React.createElement("datalist", {
+    id: "unit-suggestions"
+  }, COMMON_UNITS.map(u => /*#__PURE__*/React.createElement("option", {
+    key: u,
+    value: u
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "field"
+  }, /*#__PURE__*/React.createElement("label", {
+    htmlFor: "log-price"
+  }, "Unit price"), /*#__PURE__*/React.createElement("input", {
+    id: "log-price",
+    type: "number",
+    min: "0",
+    step: "0.01",
+    placeholder: "0.00",
+    value: unitPrice,
+    onChange: e => setUnitPrice(e.target.value)
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    className: "btn btn-primary log-form-submit",
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(Spinner, null) : null, "Add entry")), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginTop: 14
+    }
+  }, error)));
+}
+
+/* ============================================================
+   DELETE LOG ENTRY CONFIRM MODAL
+   ============================================================ */
+function DeleteLogConfirmModal({
+  log,
+  onClose,
+  onConfirm
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  async function handleDelete() {
+    setLoading(true);
+    setError("");
+    try {
+      await onConfirm(log.id);
+      onClose();
+    } catch (err) {
+      setError(err.message || "Couldn't delete that entry. Try again.");
+      setLoading(false);
+    }
+  }
+  return /*#__PURE__*/React.createElement(Modal, {
+    onClose: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-icon-warn",
+    "aria-hidden": "true"
+  }, "!"), /*#__PURE__*/React.createElement("h2", {
+    className: "modal-title"
+  }, "Delete this entry?"), /*#__PURE__*/React.createElement("p", {
+    className: "modal-body-text"
+  }, /*#__PURE__*/React.createElement("strong", null, log.material_name), " (", formatNumber(log.quantity), " ", log.unit, ") logged on", " ", formatLogDate(log.date), " will be permanently deleted."), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      marginBottom: 6
+    }
+  }, error), /*#__PURE__*/React.createElement("div", {
+    className: "modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn btn-ghost",
+    onClick: onClose
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "btn btn-danger",
+    onClick: handleDelete,
+    disabled: loading
+  }, loading ? /*#__PURE__*/React.createElement(Spinner, {
+    light: true
+  }) : null, "Delete entry")));
+}
+
+/* ============================================================
+   LEDGER ROW — view + inline edit
+   ============================================================ */
+function LedgerRow({
+  log,
+  onSave,
+  onDeleteRequest
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(log);
+  const [saving, setSaving] = useState(false);
+  const [rowError, setRowError] = useState("");
+  function startEdit() {
+    setDraft({
+      date: log.date,
+      material_name: log.material_name,
+      quantity: log.quantity,
+      unit: log.unit,
+      unit_price: log.unit_price
+    });
+    setRowError("");
+    setEditing(true);
+  }
+  function cancelEdit() {
+    setEditing(false);
+    setRowError("");
+  }
+  const draftQty = parseFloat(draft.quantity);
+  const draftPrice = parseFloat(draft.unit_price);
+  const liveTotal = (Number.isNaN(draftQty) ? 0 : draftQty) * (Number.isNaN(draftPrice) ? 0 : draftPrice);
+  async function commitEdit() {
+    if (!draft.date || !String(draft.material_name).trim() || !String(draft.unit).trim()) {
+      setRowError("Date, material, and unit can't be empty.");
+      return;
+    }
+    if (Number.isNaN(draftQty) || draftQty <= 0) {
+      setRowError("Quantity must be greater than 0.");
+      return;
+    }
+    if (Number.isNaN(draftPrice) || draftPrice < 0) {
+      setRowError("Unit price can't be negative.");
+      return;
+    }
+    setSaving(true);
+    setRowError("");
+    try {
+      await onSave(log.id, {
+        date: draft.date,
+        material_name: String(draft.material_name).trim(),
+        quantity: draftQty,
+        unit: String(draft.unit).trim(),
+        unit_price: draftPrice,
+        total_cost: draftQty * draftPrice
+      });
+      setEditing(false);
+    } catch (err) {
+      setRowError(err.message || "Couldn't save changes.");
+    } finally {
+      setSaving(false);
+    }
+  }
+  if (editing) {
+    return /*#__PURE__*/React.createElement("tr", {
+      className: "editing-row"
+    }, /*#__PURE__*/React.createElement("td", {
+      className: "cell-date"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "date",
+      className: "ledger-edit-input",
+      value: draft.date,
+      onChange: e => setDraft({
+        ...draft,
+        date: e.target.value
+      })
+    })), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      className: "ledger-edit-input is-text",
+      value: draft.material_name,
+      onChange: e => setDraft({
+        ...draft,
+        material_name: e.target.value
+      })
+    })), /*#__PURE__*/React.createElement("td", {
+      className: "cell-qty num"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      step: "0.01",
+      className: "ledger-edit-input",
+      value: draft.quantity,
+      onChange: e => setDraft({
+        ...draft,
+        quantity: e.target.value
+      })
+    })), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      className: "ledger-edit-input is-text",
+      value: draft.unit,
+      onChange: e => setDraft({
+        ...draft,
+        unit: e.target.value
+      })
+    })), /*#__PURE__*/React.createElement("td", {
+      className: "cell-price num"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "0",
+      step: "0.01",
+      className: "ledger-edit-input",
+      value: draft.unit_price,
+      onChange: e => setDraft({
+        ...draft,
+        unit_price: e.target.value
+      })
+    })), /*#__PURE__*/React.createElement("td", {
+      className: "cell-total num"
+    }, formatNumber(liveTotal)), /*#__PURE__*/React.createElement("td", {
+      className: "cell-actions"
+    }, rowError && /*#__PURE__*/React.createElement("div", {
+      className: "banner banner-error",
+      style: {
+        marginBottom: 6,
+        textAlign: "left",
+        fontSize: 12
+      }
+    }, rowError), /*#__PURE__*/React.createElement("div", {
+      className: "row-actions"
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-ghost",
+      onClick: cancelEdit,
+      disabled: saving
+    }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+      className: "btn btn-primary",
+      onClick: commitEdit,
+      disabled: saving
+    }, saving ? /*#__PURE__*/React.createElement(Spinner, null) : null, "Save"))));
+  }
+  return /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    className: "cell-date"
+  }, formatLogDate(log.date)), /*#__PURE__*/React.createElement("td", null, log.material_name), /*#__PURE__*/React.createElement("td", {
+    className: "cell-qty num"
+  }, formatNumber(log.quantity)), /*#__PURE__*/React.createElement("td", null, log.unit), /*#__PURE__*/React.createElement("td", {
+    className: "cell-price num"
+  }, formatNumber(log.unit_price)), /*#__PURE__*/React.createElement("td", {
+    className: "cell-total num"
+  }, formatNumber(log.total_cost)), /*#__PURE__*/React.createElement("td", {
+    className: "cell-actions"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "row-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn-icon",
+    title: "Edit entry",
+    "aria-label": "Edit entry",
+    onClick: startEdit
+  }, "✏️"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-icon",
+    title: "Delete entry",
+    "aria-label": "Delete entry",
+    onClick: () => onDeleteRequest(log),
+    style: {
+      color: "var(--red)"
+    }
+  }, "🗑️"))));
+}
+
+/* ============================================================
+   MATERIAL LOG TAB
+   ============================================================ */
+function MaterialLogTab({
+  logs,
+  loading,
+  error,
+  onAdd,
+  onSave,
+  onDelete
+}) {
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const totalCost = logs.reduce((sum, l) => sum + Number(l.total_cost || 0), 0);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(LogEntryForm, {
+    onAdd: onAdd
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ledger-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ledger-card-head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ledger-card-title"
+  }, "Material log"), /*#__PURE__*/React.createElement("span", {
+    className: "ledger-count"
+  }, logs.length, " ", logs.length === 1 ? "entry" : "entries")), error && /*#__PURE__*/React.createElement("div", {
+    className: "banner banner-error",
+    style: {
+      margin: "14px 22px 0"
+    }
+  }, error), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "full-loading",
+    style: {
+      minHeight: "20vh"
+    }
+  }, /*#__PURE__*/React.createElement(Spinner, null), " Loading log…") : logs.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "ledger-empty"
+  }, /*#__PURE__*/React.createElement("h3", null, "No deliveries logged yet"), /*#__PURE__*/React.createElement("p", null, "Use the form above to log the first material delivery for this project.")) : /*#__PURE__*/React.createElement("div", {
+    className: "ledger-scroll"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "ledger-table"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Date"), /*#__PURE__*/React.createElement("th", null, "Material"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Quantity"), /*#__PURE__*/React.createElement("th", null, "Unit"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Unit price"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Total cost"), /*#__PURE__*/React.createElement("th", null))), /*#__PURE__*/React.createElement("tbody", null, logs.map(log => /*#__PURE__*/React.createElement(LedgerRow, {
+    key: log.id,
+    log: log,
+    onSave: onSave,
+    onDeleteRequest: setDeleteTarget
+  }))), /*#__PURE__*/React.createElement("tfoot", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: "5"
+  }, "Total"), /*#__PURE__*/React.createElement("td", {
+    className: "num"
+  }, formatNumber(totalCost)), /*#__PURE__*/React.createElement("td", null)))))), deleteTarget && /*#__PURE__*/React.createElement(DeleteLogConfirmModal, {
+    log: deleteTarget,
+    onClose: () => setDeleteTarget(null),
+    onConfirm: onDelete
+  }));
+}
+
+/* ============================================================
+   TOTAL SUMMARY TAB
+   ============================================================ */
+function TotalSummaryTab({
+  logs,
+  loading
+}) {
+  const totalSpent = logs.reduce((sum, l) => sum + Number(l.total_cost || 0), 0);
+  const byMaterial = useMemo(() => {
+    const map = new Map();
+    for (const l of logs) {
+      const key = (l.material_name || "").trim() || "—";
+      const existing = map.get(key) || {
+        material_name: key,
+        quantityByUnit: new Map(),
+        total_cost: 0,
+        entryCount: 0
+      };
+      const unitKey = (l.unit || "").trim() || "—";
+      existing.quantityByUnit.set(unitKey, (existing.quantityByUnit.get(unitKey) || 0) + Number(l.quantity || 0));
+      existing.total_cost += Number(l.total_cost || 0);
+      existing.entryCount += 1;
+      map.set(key, existing);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total_cost - a.total_cost);
+  }, [logs]);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "total-spent-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow",
+    style: {
+      color: "rgba(255,255,255,0.55)"
+    }
+  }, "Total spent on this project"), /*#__PURE__*/React.createElement("div", {
+    className: "total-spent-figure"
+  }, formatNumber(totalSpent)), /*#__PURE__*/React.createElement("div", {
+    className: "total-spent-sub"
+  }, "Across ", logs.length, " ", logs.length === 1 ? "logged delivery" : "logged deliveries")), /*#__PURE__*/React.createElement("div", {
+    className: "ledger-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ledger-card-head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ledger-card-title"
+  }, "Spend by material"), /*#__PURE__*/React.createElement("span", {
+    className: "ledger-count"
+  }, byMaterial.length, " ", byMaterial.length === 1 ? "material" : "materials")), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "full-loading",
+    style: {
+      minHeight: "20vh"
+    }
+  }, /*#__PURE__*/React.createElement(Spinner, null), " Loading summary…") : byMaterial.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "ledger-empty"
+  }, /*#__PURE__*/React.createElement("h3", null, "Nothing to summarize yet"), /*#__PURE__*/React.createElement("p", null, "Log a delivery on the Material Log tab and it will roll up here automatically.")) : /*#__PURE__*/React.createElement("div", {
+    className: "ledger-scroll"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "ledger-table"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Material"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Total quantity"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Entries"), /*#__PURE__*/React.createElement("th", {
+    className: "num"
+  }, "Total cost"))), /*#__PURE__*/React.createElement("tbody", null, byMaterial.map(row => /*#__PURE__*/React.createElement("tr", {
+    key: row.material_name
+  }, /*#__PURE__*/React.createElement("td", null, row.material_name), /*#__PURE__*/React.createElement("td", {
+    className: "num"
+  }, Array.from(row.quantityByUnit.entries()).map(([unit, qty]) => `${formatNumber(qty)} ${unit}`).join(" + ")), /*#__PURE__*/React.createElement("td", {
+    className: "num"
+  }, row.entryCount), /*#__PURE__*/React.createElement("td", {
+    className: "cell-total num"
+  }, formatNumber(row.total_cost))))), /*#__PURE__*/React.createElement("tfoot", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: "3"
+  }, "Total"), /*#__PURE__*/React.createElement("td", {
+    className: "num"
+  }, formatNumber(totalSpent))))))));
+}
+
+/* ============================================================
+   CHART PALETTE
+   ============================================================ */
+const CHART_PALETTE = ["#F2A93B",
+// amber
+"#2F5D8C",
+// steel
+"#4C9A6B",
+// green
+"#9B6B9E",
+// muted plum
+"#C97B5F",
+// terracotta
+"#5C8374",
+// muted teal
+"#B98B3E",
+// ochre
+"#7A8BA3" // slate blue
+];
+
+/* ============================================================
+   LINE CHART — unit price over time for one material
+   ============================================================ */
+function UnitPriceLineChart({
+  points
+}) {
+  if (points.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "chart-empty"
+    }, /*#__PURE__*/React.createElement("p", null, "No entries yet for this material."));
+  }
+  const padding = {
+    top: 22,
+    right: 24,
+    bottom: 44,
+    left: 56
+  };
+  const rowHeight = 240;
+  const pointGap = 78;
+  const innerWidth = points.length > 1 ? (points.length - 1) * pointGap : pointGap;
+  const width = padding.left + padding.right + innerWidth;
+  const height = padding.top + padding.bottom + rowHeight;
+  const prices = points.map(p => p.unit_price);
+  let minPrice = Math.min(...prices);
+  let maxPrice = Math.max(...prices);
+  if (minPrice === maxPrice) {
+    const delta = minPrice === 0 ? 1 : minPrice * 0.15;
+    minPrice -= delta;
+    maxPrice += delta;
+  } else {
+    const pad = (maxPrice - minPrice) * 0.12;
+    minPrice -= pad;
+    maxPrice += pad;
+  }
+  minPrice = Math.max(0, minPrice);
+  const yFor = price => padding.top + (1 - (price - minPrice) / (maxPrice - minPrice)) * rowHeight;
+  const xFor = i => points.length === 1 ? padding.left + innerWidth / 2 : padding.left + i * pointGap;
+  const gridLines = Array.from({
+    length: 5
+  }, (_, i) => {
+    const price = minPrice + (maxPrice - minPrice) * i / 4;
+    return {
+      y: yFor(price),
+      price
+    };
+  });
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(p.unit_price)}`).join(" ");
+  return /*#__PURE__*/React.createElement("div", {
+    className: "chart-svg-wrap"
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    width: width,
+    height: height,
+    role: "img",
+    "aria-label": "Unit price over time"
+  }, gridLines.map((g, i) => /*#__PURE__*/React.createElement("g", {
+    key: i
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: padding.left,
+    x2: width - padding.right,
+    y1: g.y,
+    y2: g.y,
+    className: "chart-grid-line"
+  }), /*#__PURE__*/React.createElement("text", {
+    x: padding.left - 10,
+    y: g.y,
+    textAnchor: "end",
+    dominantBaseline: "middle",
+    className: "chart-tick-label"
+  }, formatNumber(g.price)))), /*#__PURE__*/React.createElement("line", {
+    x1: padding.left,
+    x2: width - padding.right,
+    y1: padding.top + rowHeight,
+    y2: padding.top + rowHeight,
+    className: "chart-axis-line"
+  }), points.length > 1 && /*#__PURE__*/React.createElement("path", {
+    d: linePath,
+    className: "chart-data-line"
+  }), points.map((p, i) => /*#__PURE__*/React.createElement("g", {
+    key: p.id
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: xFor(i),
+    cy: yFor(p.unit_price),
+    r: "4.5",
+    className: "chart-point"
+  }, /*#__PURE__*/React.createElement("title", null, `${formatLogDate(p.date)}: ${formatNumber(p.unit_price)}`)), /*#__PURE__*/React.createElement("text", {
+    x: xFor(i),
+    y: padding.top + rowHeight + 20,
+    textAnchor: "middle",
+    className: "chart-tick-label"
+  }, formatLogDate(p.date)))), /*#__PURE__*/React.createElement("text", {
+    x: padding.left + innerWidth / 2,
+    y: height - 4,
+    textAnchor: "middle",
+    className: "chart-axis-title"
+  }, "Date"), /*#__PURE__*/React.createElement("text", {
+    x: 16,
+    y: padding.top + rowHeight / 2,
+    textAnchor: "middle",
+    className: "chart-axis-title",
+    transform: `rotate(-90 16 ${padding.top + rowHeight / 2})`
+  }, "Unit price")));
+}
+
+/* ============================================================
+   DONUT / PIE CHART — total cost share by material
+   ============================================================ */
+function CostSharePieChart({
+  slices,
+  totalCost
+}) {
+  if (slices.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "chart-empty"
+    }, /*#__PURE__*/React.createElement("p", null, "Log a few deliveries to see the cost breakdown."));
+  }
+  const size = 220,
+    cx = 110,
+    cy = 110;
+  const outerR = 92,
+    innerR = 56;
+  const ringR = (outerR + innerR) / 2;
+  const strokeW = outerR - innerR;
+  const circumference = 2 * Math.PI * ringR;
+  let cumulative = 0;
+  const drawnSlices = slices.map((s, i) => {
+    const length = s.pct / 100 * circumference;
+    const midFraction = (cumulative + length / 2) / circumference;
+    const midAngle = -90 + midFraction * 360;
+    const rad = midAngle * Math.PI / 180;
+    const slice = {
+      ...s,
+      color: CHART_PALETTE[i % CHART_PALETTE.length],
+      dasharray: `${length} ${circumference - length}`,
+      dashoffset: -cumulative,
+      labelX: cx + ringR * Math.cos(rad),
+      labelY: cy + ringR * Math.sin(rad),
+      showOnSlice: s.pct >= 6
+    };
+    cumulative += length;
+    return slice;
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    className: "donut-layout"
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${size} ${size}`,
+    width: size,
+    height: size,
+    role: "img",
+    "aria-label": "Total cost share by material"
+  }, /*#__PURE__*/React.createElement("g", {
+    transform: `rotate(-90 ${cx} ${cy})`
+  }, drawnSlices.map(s => /*#__PURE__*/React.createElement("circle", {
+    key: s.material_name,
+    cx: cx,
+    cy: cy,
+    r: ringR,
+    fill: "none",
+    stroke: s.color,
+    strokeWidth: strokeW,
+    strokeDasharray: s.dasharray,
+    strokeDashoffset: s.dashoffset
+  }, /*#__PURE__*/React.createElement("title", null, `${s.material_name}: ${s.pct.toFixed(1)}% (${formatNumber(s.total_cost)})`)))), drawnSlices.filter(s => s.showOnSlice).map(s => /*#__PURE__*/React.createElement("text", {
+    key: s.material_name + "-lbl",
+    x: s.labelX,
+    y: s.labelY,
+    textAnchor: "middle",
+    dominantBaseline: "middle",
+    className: "donut-slice-label"
+  }, Math.round(s.pct), "%")), /*#__PURE__*/React.createElement("text", {
+    x: cx,
+    y: cy - 6,
+    textAnchor: "middle",
+    className: "donut-center-eyebrow"
+  }, "Total"), /*#__PURE__*/React.createElement("text", {
+    x: cx,
+    y: cy + 14,
+    textAnchor: "middle",
+    className: "donut-center-figure"
+  }, formatNumber(totalCost))), /*#__PURE__*/React.createElement("ul", {
+    className: "chart-legend"
+  }, drawnSlices.map(s => /*#__PURE__*/React.createElement("li", {
+    key: s.material_name,
+    className: "chart-legend-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "chart-legend-swatch",
+    style: {
+      background: s.color
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "chart-legend-name"
+  }, s.material_name), /*#__PURE__*/React.createElement("span", {
+    className: "chart-legend-pct"
+  }, s.pct.toFixed(1), "%")))));
+}
+
+/* ============================================================
+   VISUAL ANALYTICS TAB
+   ============================================================ */
+function VisualAnalyticsTab({
+  logs
+}) {
+  const materials = useMemo(() => {
+    const set = new Set(logs.map(l => (l.material_name || "").trim()).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [logs]);
+  const [selectedMaterial, setSelectedMaterial] = useState("");
+  useEffect(() => {
+    if (materials.length === 0) {
+      if (selectedMaterial !== "") setSelectedMaterial("");
+      return;
+    }
+    if (!materials.includes(selectedMaterial)) setSelectedMaterial(materials[0]);
+  }, [materials, selectedMaterial]);
+  const linePoints = useMemo(() => {
+    return logs.filter(l => (l.material_name || "").trim() === selectedMaterial).slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id);
+  }, [logs, selectedMaterial]);
+  const {
+    pieSlices,
+    totalCost
+  } = useMemo(() => {
+    const map = new Map();
+    let total = 0;
+    for (const l of logs) {
+      const key = (l.material_name || "").trim() || "—";
+      map.set(key, (map.get(key) || 0) + Number(l.total_cost || 0));
+      total += Number(l.total_cost || 0);
+    }
+    const slices = Array.from(map.entries()).map(([material_name, total_cost]) => ({
+      material_name,
+      total_cost,
+      pct: total > 0 ? total_cost / total * 100 : 0
+    })).sort((a, b) => b.total_cost - a.total_cost);
+    return {
+      pieSlices: slices,
+      totalCost: total
+    };
+  }, [logs]);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "analytics-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "chart-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "chart-card-head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "chart-card-title"
+  }, "Unit price over time"), materials.length > 0 && /*#__PURE__*/React.createElement("select", {
+    className: "chart-select",
+    value: selectedMaterial,
+    onChange: e => setSelectedMaterial(e.target.value),
+    "aria-label": "Choose material"
+  }, materials.map(m => /*#__PURE__*/React.createElement("option", {
+    key: m,
+    value: m
+  }, m)))), materials.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "chart-empty"
+  }, /*#__PURE__*/React.createElement("p", null, "Log a delivery to see this chart.")) : /*#__PURE__*/React.createElement(UnitPriceLineChart, {
+    points: linePoints
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "chart-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "chart-card-head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "chart-card-title"
+  }, "Cost share by material")), /*#__PURE__*/React.createElement(CostSharePieChart, {
+    slices: pieSlices,
+    totalCost: totalCost
+  })));
+}
+
+/* ============================================================
+   PRICE TREND ALERTS — algorithm constants
+   A spike fires when the latest delivery price is ≥ SPIKE_PCT
+   above the rolling average of all prior deliveries of that
+   material. A savings note fires when it is ≥ SAVINGS_PCT below
+   that average AND at or near the historical minimum.
+   ============================================================ */
+const SPIKE_PCT = 12; // percent above prior avg → spike
+const SAVINGS_PCT = 8; // percent below prior avg (at/near min) → savings
+
+function computePriceAlerts(logs) {
+  // Group all logs by material name, keeping only entries with a valid price.
+  const byMaterial = new Map();
+  for (const l of logs) {
+    const key = (l.material_name || "").trim();
+    const price = Number(l.unit_price);
+    if (!key || Number.isNaN(price) || price <= 0) continue;
+    if (!byMaterial.has(key)) byMaterial.set(key, []);
+    byMaterial.get(key).push(l);
+  }
+  const spikes = [];
+  const savings = [];
+  let materialsAnalyzed = 0;
+  for (const [material, entries] of byMaterial) {
+    // Need at least two entries to compare anything.
+    if (entries.length < 2) continue;
+    materialsAnalyzed++;
+
+    // Chronological sort (oldest → newest). Use ID as tiebreaker.
+    const sorted = [...entries].sort((a, b) => a.date !== b.date ? a.date < b.date ? -1 : 1 : a.id - b.id);
+    const latestEntry = sorted[sorted.length - 1];
+    const latestPrice = Number(latestEntry.unit_price);
+    const latestDate = latestEntry.date;
+    const priorPrices = sorted.slice(0, -1).map(e => Number(e.unit_price));
+    const priorAvg = priorPrices.reduce((s, p) => s + p, 0) / priorPrices.length;
+    const histMin = Math.min(...priorPrices, latestPrice);
+    const spikeThr = priorAvg * (1 + SPIKE_PCT / 100);
+    const savingsThr = priorAvg * (1 - SAVINGS_PCT / 100);
+    if (latestPrice >= spikeThr) {
+      const changePct = (latestPrice - priorAvg) / priorAvg * 100;
+      spikes.push({
+        material,
+        latestPrice,
+        latestDate,
+        priorAvg,
+        changePct,
+        entryCount: entries.length
+      });
+    } else if (latestPrice <= savingsThr && latestPrice <= histMin * 1.05) {
+      const savingsPct = (priorAvg - latestPrice) / priorAvg * 100;
+      savings.push({
+        material,
+        latestPrice,
+        latestDate,
+        priorAvg,
+        savingsPct,
+        isAtMin: latestPrice <= histMin,
+        entryCount: entries.length
+      });
+    }
+  }
+  spikes.sort((a, b) => b.changePct - a.changePct);
+  savings.sort((a, b) => b.savingsPct - a.savingsPct);
+  return {
+    spikes,
+    savings,
+    materialsAnalyzed
+  };
+}
+
+/* ============================================================
+   ALERT CARD
+   ============================================================ */
+function AlertCard({
+  alert,
+  type
+}) {
+  const isSpike = type === "spike";
+  const changeLbl = `${isSpike ? "+" : "−"}${formatNumber(isSpike ? alert.changePct : alert.savingsPct, 1)}%`;
+  return /*#__PURE__*/React.createElement("div", {
+    className: `alert-card ${type}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alert-card-header"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: `alert-card-type-label ${type}`
+  }, isSpike ? "⚠ Price spike" : "✓ Savings note"), /*#__PURE__*/React.createElement("h3", {
+    className: "alert-card-material"
+  }, alert.material)), /*#__PURE__*/React.createElement("div", {
+    className: `alert-card-badge ${type}`
+  }, changeLbl)), /*#__PURE__*/React.createElement("div", {
+    className: "alert-card-prices"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-item"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-label"
+  }, "Latest price"), /*#__PURE__*/React.createElement("div", {
+    className: `alert-price-value ${type}`
+  }, formatNumber(alert.latestPrice))), /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-arrow"
+  }, isSpike ? "↑" : "↓"), /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-item"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-label"
+  }, "Prior avg"), /*#__PURE__*/React.createElement("div", {
+    className: "alert-price-value neutral"
+  }, formatNumber(alert.priorAvg)))), /*#__PURE__*/React.createElement("div", {
+    className: "alert-card-footer"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alert-card-date"
+  }, "Latest: ", formatLogDate(alert.latestDate)), /*#__PURE__*/React.createElement("span", {
+    className: "alert-card-count"
+  }, alert.entryCount, " deliveries")));
+}
+
+/* ============================================================
+   PRICE TREND ALERTS TAB
+   Fully derived from existing logs state — no extra DB query.
+   ============================================================ */
+function PriceTrendAlertsTab({
+  logs
+}) {
+  const {
+    spikes,
+    savings,
+    materialsAnalyzed
+  } = useMemo(() => computePriceAlerts(logs), [logs]);
+
+  // Not enough logs at all
+  if (logs.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "alerts-empty"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "alerts-empty-icon"
+    }, "📊"), /*#__PURE__*/React.createElement("h3", null, "No data yet"), /*#__PURE__*/React.createElement("p", null, "Log some deliveries on the Material Log tab — price trends will appear here automatically."));
+  }
+
+  // Logs exist but no material has 2+ entries
+  if (materialsAnalyzed === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "alerts-empty"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "alerts-empty-icon"
+    }, "🔍"), /*#__PURE__*/React.createElement("h3", null, "Not enough history yet"), /*#__PURE__*/React.createElement("p", null, "Alerts fire once a material has been logged at least twice. Keep adding deliveries to unlock trend detection."));
+  }
+  const totalAlerts = spikes.length + savings.length;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-summary-bar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-value spike"
+  }, spikes.length), /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-label"
+  }, "Price spike", spikes.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-stat-divider"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-value savings"
+  }, savings.length), /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-label"
+  }, "Savings note", savings.length !== 1 ? "s" : "")), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-stat-divider"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-stat"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-value neutral"
+  }, materialsAnalyzed), /*#__PURE__*/React.createElement("span", {
+    className: "alerts-stat-label"
+  }, "Material", materialsAnalyzed !== 1 ? "s" : "", " monitored")), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-summary-note"
+  }, "A spike flags the latest price when it's ≥", SPIKE_PCT, "% above the prior average. A savings note flags prices ≥", SAVINGS_PCT, "% below the prior average when they're at or near the historical low.")), totalAlerts === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "alerts-all-clear"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-all-clear-icon"
+  }, "✓"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-all-clear-title"
+  }, "All clear"), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-all-clear-sub"
+  }, "No significant price movements detected across ", materialsAnalyzed, " monitored material", materialsAnalyzed !== 1 ? "s" : "", ". Prices are within normal range."))), spikes.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "alerts-section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-section-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alerts-section-icon spike",
+    "aria-hidden": "true"
+  }, "⚠"), /*#__PURE__*/React.createElement("h2", {
+    className: "alerts-section-title"
+  }, "Price spikes"), /*#__PURE__*/React.createElement("span", {
+    className: "alerts-section-badge spike"
+  }, spikes.length)), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-grid"
+  }, spikes.map(alert => /*#__PURE__*/React.createElement(AlertCard, {
+    key: alert.material,
+    alert: alert,
+    type: "spike"
+  })))), savings.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "alerts-section"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "alerts-section-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "alerts-section-icon savings",
+    "aria-hidden": "true"
+  }, "↓"), /*#__PURE__*/React.createElement("h2", {
+    className: "alerts-section-title"
+  }, "Savings opportunities"), /*#__PURE__*/React.createElement("span", {
+    className: "alerts-section-badge savings"
+  }, savings.length)), /*#__PURE__*/React.createElement("div", {
+    className: "alerts-grid"
+  }, savings.map(alert => /*#__PURE__*/React.createElement(AlertCard, {
+    key: alert.material,
+    alert: alert,
+    type: "savings"
+  })))));
+}
+
+/* ============================================================
+   DASHBOARD SCREEN — tabs container + shared logs state
+   ============================================================ */
+const DASHBOARD_TABS = [{
+  id: "material-log",
+  label: "Material Log"
+}, {
+  id: "total-summary",
+  label: "Total Summary"
+}, {
+  id: "visual-analytics",
+  label: "Visual Analytics"
+}, {
+  id: "price-alerts",
+  label: "Price Trend Alerts"
+}];
+function DashboardScreen({
+  session,
+  project,
+  onBack,
+  onSignOut
+}) {
+  const [activeTab, setActiveTab] = useState("material-log");
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const {
+      data,
+      error: fetchErr
+    } = await supabase.from("material_logs").select("id, project_id, date, material_name, quantity, unit, unit_price, total_cost").eq("project_id", project.id).order("date", {
+      ascending: false
+    }).order("id", {
+      ascending: false
+    });
+    if (fetchErr) {
+      setError(fetchErr.message);
+    } else {
+      setLogs(data || []);
+    }
+    setLoading(false);
+  }, [project.id]);
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+  function sortLogs(arr) {
+    return [...arr].sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.id > a.id ? 1 : -1;
+    });
+  }
+  async function handleAdd(entry) {
+    const {
+      data,
+      error: insertErr
+    } = await supabase.from("material_logs").insert([{
+      ...entry,
+      project_id: project.id
+    }]).select().single();
+    if (insertErr) throw insertErr;
+    setLogs(prev => sortLogs([data, ...prev]));
+  }
+  async function handleSave(id, updatedFields) {
+    const {
+      data,
+      error: updateErr
+    } = await supabase.from("material_logs").update(updatedFields).eq("id", id).select().single();
+    if (updateErr) throw updateErr;
+    setLogs(prev => sortLogs(prev.map(l => l.id === id ? data : l)));
+  }
+  async function handleDelete(id) {
+    const {
+      error: deleteErr
+    } = await supabase.from("material_logs").delete().eq("id", id);
+    if (deleteErr) throw deleteErr;
+    setLogs(prev => prev.filter(l => l.id !== id));
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("header", {
+    className: "dashboard-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "dashboard-header-left"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "back-link",
+    onClick: onBack
+  }, "← Projects"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "dashboard-project-eyebrow"
+  }, "Project"), /*#__PURE__*/React.createElement("div", {
+    className: "dashboard-project-name"
+  }, project.project_name))), /*#__PURE__*/React.createElement("div", {
+    className: "app-header-right"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "app-header-email"
+  }, session.user.email), /*#__PURE__*/React.createElement("button", {
+    className: "signout-btn",
+    onClick: onSignOut
+  }, "Log out"))), /*#__PURE__*/React.createElement("nav", {
+    className: "tab-bar",
+    "aria-label": "Dashboard tabs"
+  }, DASHBOARD_TABS.map(tab => /*#__PURE__*/React.createElement("button", {
+    key: tab.id,
+    className: "tab-btn" + (activeTab === tab.id ? " tab-active" : ""),
+    onClick: () => setActiveTab(tab.id),
+    "aria-current": activeTab === tab.id ? "page" : undefined
+  }, tab.label))), /*#__PURE__*/React.createElement("main", {
+    className: "dashboard-main"
+  }, activeTab === "material-log" && /*#__PURE__*/React.createElement(MaterialLogTab, {
+    logs: logs,
+    loading: loading,
+    error: error,
+    onAdd: handleAdd,
+    onSave: handleSave,
+    onDelete: handleDelete
+  }), activeTab === "total-summary" && /*#__PURE__*/React.createElement(TotalSummaryTab, {
+    logs: logs,
+    loading: loading
+  }), activeTab === "visual-analytics" && /*#__PURE__*/React.createElement(VisualAnalyticsTab, {
+    logs: logs
+  }), activeTab === "price-alerts" && /*#__PURE__*/React.createElement(PriceTrendAlertsTab, {
+    logs: logs
+  })));
+}
+
+/* ============================================================
+   APP ROOT
+   ============================================================ */
+function App() {
+  const [session, setSession] = useState(undefined); // undefined = checking
+  const [activeProject, setActiveProject] = useState(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({
+      data
+    }) => {
+      setSession(data.session);
+    });
+    const {
+      data: listener
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (!newSession) setActiveProject(null);
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    setSession(null);
+    setActiveProject(null);
+  }
+  if (session === undefined) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "full-loading"
+    }, /*#__PURE__*/React.createElement(Spinner, null), " Checking your session…");
+  }
+  if (!session) return /*#__PURE__*/React.createElement(AuthScreen, {
+    onAuthed: setSession
+  });
+  if (activeProject) {
+    return /*#__PURE__*/React.createElement(DashboardScreen, {
+      session: session,
+      project: activeProject,
+      onBack: () => setActiveProject(null),
+      onSignOut: handleSignOut
+    });
+  }
+  return /*#__PURE__*/React.createElement(ProjectsScreen, {
+    session: session,
+    onSignOut: handleSignOut,
+    onOpenProject: setActiveProject
+  });
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/*#__PURE__*/React.createElement(App, null));
+</script>
+</body>
+</html>
